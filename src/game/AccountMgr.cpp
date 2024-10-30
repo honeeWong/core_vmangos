@@ -30,7 +30,6 @@
 #include "World.h"
 #include "WorldSession.h"
 #include "MasterPlayer.h"
-#include "Anticheat.h"
 #include "Crypto/Authentication/SRP6.h"
 #include "Crypto/Hash/SHA1.h"
 
@@ -494,7 +493,7 @@ uint32 AccountPersistentData::CountWhispersTo(MasterPlayer* from, MasterPlayer* 
 
 bool AccountPersistentData::CanWhisper(MasterPlayer* player) const
 {
-    return sAnticheatMgr->CanWhisper(*this, player);
+    return true;
 }
 
 uint32 AccountPersistentData::GetWhisperScore(MasterPlayer* from, MasterPlayer* target) const

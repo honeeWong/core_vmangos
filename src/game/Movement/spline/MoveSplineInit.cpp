@@ -25,7 +25,6 @@
 #include "Transport.h"
 #include "ObjectMgr.h"
 #include "ObjectAccessor.h"
-#include "Anticheat.h"
 #include "MovementPacketSender.h"
 
 namespace Movement
@@ -127,9 +126,6 @@ int32 MoveSplineInit::Launch()
         return 0;
 
     args.splineId = splineCounter++;
-
-    if (Player* pPlayer = unit.ToPlayer())
-        pPlayer->GetCheatData()->ResetJumpCounters();
 
     if (unit.IsPlayer() || unit.GetPossessorGuid().IsPlayer())
         unit.SetSplineDonePending(true);

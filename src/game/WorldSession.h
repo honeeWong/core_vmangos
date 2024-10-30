@@ -51,13 +51,24 @@ class LoginQueryHolder;
 class CharacterHandler;
 class MovementInfo;
 class WorldSession;
-class Warden;
-class MovementAnticheat;
 class BigNumber;
 class MasterPlayer;
 
 struct OpcodeHandler;
 struct PlayerBotEntry;
+
+enum CheatAction
+{
+    CHEAT_ACTION_NONE             = 0x00,
+    CHEAT_ACTION_LOG              = 0x01,
+    CHEAT_ACTION_REPORT_GMS       = 0x02,
+    CHEAT_ACTION_GLOBAL_ANNOUNNCE = 0x04,
+    CHEAT_ACTION_KICK             = 0x08,
+    CHEAT_ACTION_BAN_ACCOUNT      = 0x10,
+    CHEAT_ACTION_BAN_IP_ACCOUNT   = 0x20,
+    CHEAT_ACTION_MUTE_PUB_CHANS   = 0x40, // Mutes the account from public channels
+    CHEAT_MAX_ACTIONS,
+};
 
 enum PartyOperation
 {
@@ -376,11 +387,8 @@ class WorldSession
         void SetBot(std::shared_ptr<PlayerBotEntry> const& b) { m_bot = b; }
 
         // Warden / Anticheat
-        void InitWarden();
         void SetSessionKey(BigNumber const& sessionKey) { m_sessionKey = sessionKey; }
-        Warden* GetWarden() const { return m_warden; }
         void InitCheatData(Player* pPlayer);
-        MovementAnticheat* GetCheatData();
         void ProcessAnticheatAction(char const* detector, char const* reason, uint32 cheatAction, uint32 banSeconds = 0 /* Perm ban */);
         uint32 GetFingerprint() const { return 0; } // TODO
         void CleanupFingerprintHistory() {} // TODO
@@ -904,9 +912,6 @@ class WorldSession
         bool m_verifiedEmail;
         std::shared_ptr<PlayerBotEntry> m_bot;
         std::unique_ptr<SniffFile> m_sniffFile;
-
-        Warden* m_warden;
-        MovementAnticheat* m_cheatData;
 
         Player* _player;
         ObjectGuid m_currentPlayerGuid;

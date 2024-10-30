@@ -20,7 +20,6 @@
 #include "Opcodes.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"
-#include "Anticheat.h"
 #include "MoveSpline.h"
 
 // Spline packets are for units controlled by the server. "Force speed change" (wrongly named opcodes) and "move set speed" packets are for units controlled by a player.
@@ -81,7 +80,6 @@ void MovementPacketSender::SendSpeedChangeToController(Unit* unit, Player* mover
 #endif
     data << float(pendingChange.newValue);
 
-    mover->GetCheatData()->LogMovementPacket(false, data);
     mover->GetSession()->SendPacket(&data);
 }
 
@@ -197,7 +195,6 @@ void MovementPacketSender::SendTeleportToController(Unit* unit, float x, float y
 #endif
     data << mi;
 
-    mover->GetCheatData()->LogMovementPacket(false, data);
     mover->GetSession()->SendPacket(&data);
 }
 
@@ -257,7 +254,6 @@ void MovementPacketSender::SendKnockBackToController(Unit* unit, float vcos, flo
     data << float(vsin);                                    // y direction
     data << float(speedXY);                                 // Horizontal speed
     data << float(speedZ);                                  // Z Movement speed (vertical)
-    mover->GetCheatData()->LogMovementPacket(false, data);
     mover->GetSession()->SendPacket(&data);
 }
 
@@ -344,7 +340,6 @@ void MovementPacketSender::SendMovementFlagChangeToController(Unit* unit, Player
     data << pendingChange.movementCounter;
 #endif
     
-    mover->GetCheatData()->LogMovementPacket(false, data);
     mover->GetSession()->SendPacket(&data);
 }
 

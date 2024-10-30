@@ -73,7 +73,6 @@
 #include "PlayerBotMgr.h"
 #include "PlayerBotAI.h"
 #include "AccountMgr.h"
-#include "Anticheat.h"
 #include "MovementBroadcaster.h"
 #include "PlayerBroadcaster.h"
 #include "CharacterDatabaseCache.h"
@@ -705,7 +704,6 @@ Player::Player(WorldSession* session) : Unit(),
 
     // Anti undermap
     m_undermapPosValid = false;
-    session->InitCheatData(this);
     m_petEntry = 0;
     m_petSpell = 0;
     m_areaCheckTimer = 0;
@@ -1752,23 +1750,11 @@ void Player::Update(uint32 update_diff, uint32 p_time)
             else
                 m_areaCheckTimer -= p_time;
         }
-
-        // Anticheat sanction
-        std::stringstream reason;
-        uint32 cheatAction = GetCheatData()->Update(this, p_time, reason);
-        if (cheatAction)
-            GetSession()->ProcessAnticheatAction("MovementAnticheat", reason.str().c_str(), cheatAction, sWorld.getConfig(CONFIG_UINT32_AC_MOVEMENT_BAN_DURATION));
     }
 }
 
 void Player::OnDisconnected()
 {
-    // Anticheat sanction
-    std::stringstream reason;
-    uint32 cheatAction = GetCheatData()->Finalize(this, reason);
-    if (cheatAction)
-        GetSession()->ProcessAnticheatAction("MovementAnticheat", reason.str().c_str(), cheatAction, sWorld.getConfig(CONFIG_UINT32_AC_MOVEMENT_BAN_DURATION));
-
     SetSplineDonePending(false);
     if (IsInWorld() && FindMap())
     {
@@ -2486,7 +2472,6 @@ bool Player::ExecuteTeleportFar(ScheduledTeleportData* data)
                 data << uint32(m_transport->GetEntry());
                 data << uint32(GetMapId());
             }
-            GetCheatData()->LogMovementPacket(false, data);
             GetSession()->SendPacket(&data);
         }
 
@@ -5168,7 +5153,6 @@ void Player::KillPlayer()
 
     // 6 minutes until repop at graveyard
     m_deathTimer = CORPSE_REPOP_TIME;
-    GetCheatData()->OnDeath();
 
     UpdateCorpseReclaimDelay();                             // dependent at use SetDeathPvP() call before kill
 
@@ -6757,7 +6741,6 @@ void Player::CheckAreaExploreAndOutdoor()
             sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "PLAYER: Player %u discovered unknown area (x: %f y: %f map: %u", GetGUIDLow(), GetPositionX(), GetPositionY(), GetMapId());
         else
         {
-            GetCheatData()->OnExplore(p);
             uint32 area = p->Id;
             uint32 xp = 0;
             if (p->AreaLevel > 0 && GetLevel() < sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL))
@@ -20512,7 +20495,6 @@ void Player::SetClientControl(Unit const* target, uint8 allowMove)
     WorldPacket data(SMSG_CLIENT_CONTROL_UPDATE, target->GetPackGUID().size() + 1);
     data << target->GetPackGUID();
     data << uint8(allowMove);
-    GetCheatData()->LogMovementPacket(false, data);
     GetSession()->SendPacket(&data);
 #endif
 }

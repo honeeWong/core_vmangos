@@ -189,8 +189,6 @@ class ChatHandler
         static void FillFullCommandsName(ChatCommand* table, std::string prefix);
         static ChatCommand* getCommandTable();
         
-        bool HandleAnticheatCommand(char*);
-        bool HandleReloadAnticheatCommand(char*);
         bool HandleViewLogCommand(char*);
         bool HandleSniffCommand(char*);
 
@@ -227,16 +225,9 @@ class ChatHandler
         bool HandleDebugItemEnchantCommand(int lootid, uint32 simCount);
         bool HandleServiceDeleteCharacters(char* args);
 
-        bool HandleSpamerMute(char* args);
-        bool HandleSpamerUnmute(char* args);
-        bool HandleSpamerList(char* args);
         bool HandleWhisperRestrictionCommand(char* args);
         bool HandleUnstuckCommand(char* args);
         bool HandleGoldRemoval(char* args);
-        bool HandleAntiSpamAdd(char* args);
-        bool HandleAntiSpamRemove(char* args);
-        bool HandleAntiSpamReplace(char* args);
-        bool HandleAntiSpamRemoveReplace(char* args);
 
         // Mmaps
         bool HandleMmap(char* args);

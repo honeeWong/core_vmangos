@@ -33,7 +33,6 @@
 #include "GuildMgr.h"
 #include "ObjectGuid.h"
 #include "AsyncCommandHandlers.h"
-#include "Anticheat.h"
 
 void PInfoHandler::HandlePInfoCommand(WorldSession* session, Player* target, ObjectGuid& target_guid, std::string& name)
 {
@@ -53,13 +52,6 @@ void PInfoHandler::HandlePInfoCommand(WorldSession* session, Player* target, Obj
         data->m_latency = target->GetSession()->GetLatency();
         data->m_locale = target->GetSession()->GetSessionDbcLocale();
         data->m_online = true;
-
-        if (auto const warden = target->GetSession()->GetWarden())
-        {
-            warden->GetPlayerInfo(data->m_wardenClock, data->m_wardenFingerprint, data->m_wardenHypervisors,
-                data->m_wardenEndscene, data->m_wardenProxifier);
-            data->m_hasUsedClickToMove = warden->HasUsedClickToMove();
-        }
 
         HandleDataAfterPlayerLookup(data);
     }

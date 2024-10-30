@@ -38,7 +38,6 @@
 #include "Util.h"
 #include "GridNotifiersImpl.h"
 #include "CellImpl.h"
-#include "Anticheat.h"
 #include "AccountMgr.h"
 
 bool WorldSession::CheckChatMessageValidity(char* msg, uint32 lang, uint32 msgType)
@@ -304,14 +303,6 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
         }
     }
 
-    /** Enable various spam chat detections */
-    if (lang != LANG_ADDON)
-    {
-        if (AntispamInterface *a = sAnticheatMgr->GetAntispam())
-            if (a->isMuted(GetAccountId(), true, type))
-                return;
-    }
-
     // Message handling
     switch (type)
     {
@@ -351,17 +342,14 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
                         if (sWorld.getConfig(CONFIG_BOOL_STRICT_LATIN_IN_GENERAL_CHANNELS))
                         {
                             // remove color, punct, ctrl, space
-                            if (AntispamInterface *a = sAnticheatMgr->GetAntispam())
+                            std::string normMsg = msg;
+                            std::wstring w_normMsg;
+                            if (Utf8toWStr(normMsg, w_normMsg))
                             {
-                                std::string normMsg = a->normalizeMessage(msg, 0x1D);
-                                std::wstring w_normMsg;
-                                if (Utf8toWStr(normMsg, w_normMsg))
+                                if (!isBasicLatinString(w_normMsg, true))
                                 {
-                                    if (!isBasicLatinString(w_normMsg, true))
-                                    {
-                                        ChatHandler(this).SendSysMessage("Sorry, only Latin characters are allowed in this channel.");
-                                        return;
-                                    }
+                                    ChatHandler(this).SendSysMessage("Sorry, only Latin characters are allowed in this channel.");
+                                    return;
                                 }
                             }
                         }
@@ -375,10 +363,6 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
 
                     chn->Say(playerPointer->GetObjectGuid(), msg, lang);
                     SetLastPubChanMsgTime(time(nullptr));
-
-                    if (lang != LANG_ADDON && chn->HasFlag(Channel::ChannelFlags::CHANNEL_FLAG_GENERAL))
-                        if (AntispamInterface *a = sAnticheatMgr->GetAntispam())
-                            a->addMessage(msg, type, GetPlayerPointer(), nullptr);
                 }
             }
 
@@ -406,9 +390,6 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
             if (lang != LANG_ADDON)
             {
                 sWorld.LogChat(this, "Say", msg);
-
-                if (AntispamInterface *a = sAnticheatMgr->GetAntispam())
-                    a->addMessage(msg, type, GetPlayerPointer(), nullptr);
             }
 
             break;
@@ -428,9 +409,6 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
             if (lang != LANG_ADDON)
             {
                 sWorld.LogChat(this, "Emote", msg);
-
-                if (AntispamInterface *a = sAnticheatMgr->GetAntispam())
-                    a->addMessage(msg, type, GetPlayerPointer(), nullptr);
             }
 
             break;
@@ -451,9 +429,6 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
             if (lang != LANG_ADDON)
             {
                 sWorld.LogChat(this, "Yell", msg);
-
-                if (AntispamInterface *a = sAnticheatMgr->GetAntispam())
-                    a->addMessage(msg, type, GetPlayerPointer(), nullptr);
             }
         }
         break;
@@ -506,8 +481,7 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
 
             if (Player* toPlayer = player->GetSession()->GetPlayer())
             {
-                bool allowIgnoreAntispam = toPlayer->IsAllowedWhisperFrom(masterPlr->GetObjectGuid());
-                bool allowSendWhisper = allowIgnoreAntispam;
+                bool allowSendWhisper = toPlayer->IsAllowedWhisperFrom(masterPlr->GetObjectGuid());
 
                 if (!allowSendWhisper)
                 {
@@ -523,10 +497,6 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
                 if (lang != LANG_ADDON)
                 {
                     sWorld.LogChat(this, "Whisp", msg, PlayerPointer(new PlayerWrapper<MasterPlayer>(player)));
-
-                    if (!allowIgnoreAntispam)
-                        if (AntispamInterface *a = sAnticheatMgr->GetAntispam())
-                            a->addMessage(msg, type, GetPlayerPointer(), PlayerPointer(new PlayerWrapper<MasterPlayer>(player)));
                 }
             }
         }

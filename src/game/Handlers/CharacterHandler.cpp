@@ -38,7 +38,6 @@
 #include "Util.h"
 #include "Language.h"
 #include "Chat.h"
-#include "Anticheat.h"
 #include "MasterPlayer.h"
 #include "PlayerBroadcaster.h"
 #include "PlayerBotMgr.h"

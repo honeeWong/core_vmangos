@@ -28,7 +28,6 @@
 #include "SystemConfig.h"
 #include "Util.h"
 #include "AsyncCommandHandlers.h"
-#include "Anticheat.h"
 
 bool ChatHandler::HandleAccountCommand(char* args)
 {
@@ -1033,70 +1032,6 @@ bool ChatHandler::HandleBanListIPCommand(char* args)
         SendSysMessage("===============================================================================");
     }
 
-    return true;
-}
-
-bool ChatHandler::HandleAnticheatCommand(char* args)
-{
-    Player* player = nullptr;
-    if (!ExtractPlayerTarget(&args, &player) && m_session)
-        player = m_session->GetPlayer();
-    if (!player)
-        return false;
-
-    PSendSysMessage("Cheat report on player '%s' (GUID %u)", player->GetName(), player->GetGUIDLow());
-    if (player->GetCheatData())
-        player->GetCheatData()->HandleCommand(this);
-
-    return true;
-}
-
-bool ChatHandler::HandleSpamerMute(char* args)
-{
-    if (!*args)
-        return false;
-
-    char* cname = ExtractArg(&args);
-    if (!cname)
-        return false;
-
-    if (Player* player = ObjectAccessor::FindPlayerByName(cname))
-    {
-        if (AntispamInterface *a = sAnticheatMgr->GetAntispam())
-        {
-            a->mute(player->GetSession()->GetAccountId());
-            PSendSysMessage("Spamer %s was muted", cname);
-        }
-    }
-
-    return true;
-}
-
-bool ChatHandler::HandleSpamerUnmute(char* args)
-{
-    if (!*args)
-        return false;
-
-    char* cname = ExtractArg(&args);
-    if (!cname)
-        return false;
-
-    if (Player* player = ObjectAccessor::FindPlayerByName(cname))
-    {
-        if (AntispamInterface *a = sAnticheatMgr->GetAntispam())
-        {
-            a->unmute(player->GetSession()->GetAccountId());
-            PSendSysMessage("Spamer %s was unmuted", cname);
-        }
-    }
-
-    return true;
-}
-
-bool ChatHandler::HandleSpamerList(char* args)
-{
-    if (AntispamInterface *a = sAnticheatMgr->GetAntispam())
-        a->showMuted(GetSession());
     return true;
 }
 

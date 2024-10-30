@@ -35,7 +35,6 @@
 #include "Language.h"
 #include "ScriptMgr.h"
 #include "World.h"
-#include "Anticheat.h"
 
 void WorldSession::HandleBattlemasterHelloOpcode(WorldPacket& recv_data)
 {

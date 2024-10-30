@@ -67,7 +67,6 @@ set (game_SRCS
     AI/ScriptedInstance.cpp
     AI/ScriptedPetAI.cpp
     AI/TotemAI.cpp
-    Anticheat/Anticheat.cpp
     AuctionHouse/AuctionHouseBotMgr.cpp
     AuctionHouse/AuctionHouseMgr.cpp
     Battlegrounds/BattleGround.cpp
@@ -277,24 +276,6 @@ set (game_SRCS
     AI/ScriptedInstance.h
     AI/ScriptedPetAI.h
     AI/TotemAI.h
-    Anticheat/Anticheat.h
-    Anticheat/MovementAnticheat/MovementAnticheat.cpp
-    Anticheat/MovementAnticheat/MovementAnticheat.h
-    Anticheat/WardenAnticheat/Warden.cpp
-    Anticheat/WardenAnticheat/Warden.hpp
-    Anticheat/WardenAnticheat/WardenKeyGenerator.h
-    Anticheat/WardenAnticheat/WardenMac.cpp
-    Anticheat/WardenAnticheat/WardenMac.hpp
-    Anticheat/WardenAnticheat/WardenModule.cpp
-    Anticheat/WardenAnticheat/WardenModule.hpp
-    Anticheat/WardenAnticheat/WardenModuleMgr.cpp
-    Anticheat/WardenAnticheat/WardenModuleMgr.hpp
-    Anticheat/WardenAnticheat/WardenScan.cpp
-    Anticheat/WardenAnticheat/WardenScan.hpp
-    Anticheat/WardenAnticheat/WardenScanMgr.cpp
-    Anticheat/WardenAnticheat/WardenScanMgr.hpp
-    Anticheat/WardenAnticheat/WardenWin.cpp
-    Anticheat/WardenAnticheat/WardenWin.hpp
     AuctionHouse/AuctionHouseBotMgr.h
     AuctionHouse/AuctionHouseMgr.h
     Battlegrounds/BattleGround.h
@@ -476,7 +457,6 @@ endif()
 include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}/AI
-  ${CMAKE_CURRENT_SOURCE_DIR}/Anticheat
   ${CMAKE_CURRENT_SOURCE_DIR}/AuctionHouse
   ${CMAKE_CURRENT_SOURCE_DIR}/Battlegrounds
   ${CMAKE_CURRENT_SOURCE_DIR}/Chat
@@ -554,10 +534,6 @@ source_group("Tool"
 
 source_group("References"
   REGULAR_EXPRESSION Reference|RefManager|ThreatManager
-)
-
-source_group("Anticheat"
-  REGULAR_EXPRESSION Anticheat
 )
 
 add_library(game STATIC

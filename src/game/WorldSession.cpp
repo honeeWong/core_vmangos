@@ -41,7 +41,6 @@
 #include "SocialMgr.h"
 #include "PlayerBotMgr.h"
 #include "PlayerBotAI.h"
-#include "Anticheat.h"
 #include "Language.h"
 #include "Chat.h"
 #include "MasterPlayer.h"
@@ -75,7 +74,7 @@ WorldSession::WorldSession(uint32 id, WorldSocket *sock, AccountTypes sec, time_
     m_accountFlags(0), m_idleTime(WorldTimer::getMSTime()), _player(nullptr), m_socket(sock), m_security(sec), m_accountId(id),
     m_exhaustionState(0), m_createTime(time(nullptr)), m_previousPlayTime(0), m_logoutTime(0), m_inQueue(false),
     m_playerLoading(false), m_playerLogout(false), m_playerRecentlyLogout(false), m_playerSave(false), m_sessionDbcLocale(sWorld.GetAvailableDbcLocale(locale)),
-    m_sessionDbLocaleIndex(sObjectMgr.GetIndexForLocale(locale)), m_latency(0), m_tutorialState(TUTORIALDATA_UNCHANGED), m_warden(nullptr), m_cheatData(nullptr),
+    m_sessionDbLocaleIndex(sObjectMgr.GetIndexForLocale(locale)), m_latency(0), m_tutorialState(TUTORIALDATA_UNCHANGED),
     m_bot(nullptr), m_clientOS(CLIENT_OS_UNKNOWN), m_clientPlatform(CLIENT_PLATFORM_UNKNOWN), m_gameBuild(0), m_verifiedEmail(true),
     m_charactersCount(10), m_characterMaxLevel(0), m_lastPubChannelMsgTime(0), m_moveRejectTime(0), m_masterPlayer(nullptr)
 {
@@ -106,11 +105,6 @@ WorldSession::~WorldSession()
     // empty incoming packet queue
     for (auto& i : m_recvQueue)
         i.clear();
-
-    if (m_warden)
-        sAnticheatMgr->RemoveWardenSession(m_warden);
-
-    delete m_cheatData;
 }
 
 // Get the player name
@@ -278,9 +272,6 @@ void WorldSession::QueuePacket(std::unique_ptr<WorldPacket> newPacket)
     if (m_sniffFile)
         m_sniffFile->WritePacket(*newPacket, true, time(nullptr));
 
-    if (_player && MovementAnticheat::IsLoggedOpcode(newPacket->GetOpcode()))
-        GetCheatData()->LogMovementPacket(true, *newPacket);
-
     uint32 processing;
 
     // Handle chat packets on async thread when possible
@@ -437,12 +428,6 @@ bool WorldSession::Update(PacketFilter& updater)
         {
             m_socket->RemoveReference();
             m_socket = nullptr;
-
-            if (m_warden)
-            {
-                sAnticheatMgr->RemoveWardenSession(m_warden);
-                m_warden = nullptr;
-            }
 
             // Character stays IG for 2 minutes
             return ForcePlayerLogoutDelay();
@@ -1148,25 +1133,6 @@ void WorldSession::ExecuteOpcode(OpcodeHandler const& opHandle, WorldPacket* pac
         LogUnprocessedTail(packet);
 }
 
-void WorldSession::InitWarden()
-{
-    MANGOS_ASSERT(!m_warden);
-    m_warden = sAnticheatMgr->CreateWardenFor(this, &m_sessionKey);
-}
-
-void WorldSession::InitCheatData(Player* pPlayer)
-{
-    if (m_cheatData)
-        m_cheatData->InitNewPlayer(pPlayer);
-    else
-        m_cheatData = sAnticheatMgr->CreateAnticheatFor(pPlayer);
-}
-
-MovementAnticheat* WorldSession::GetCheatData()
-{
-    return m_cheatData ? m_cheatData : (m_cheatData = sAnticheatMgr->CreateAnticheatFor(GetPlayer()));
-}
-
 void WorldSession::ProcessAnticheatAction(char const* detector, char const* reason, uint32 cheatAction, uint32 banSeconds)
 {
     char const* action = "";
@@ -1244,8 +1210,6 @@ void WorldSession::ProcessAnticheatAction(char const* detector, char const* reas
 
 bool WorldSession::HasUsedClickToMove() const
 {
-    if (m_warden)
-        return m_warden->HasUsedClickToMove();
     return false;
 }
 

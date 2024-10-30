@@ -53,7 +53,6 @@
 #include "MoveSpline.h"
 #include "packet_builder.h"
 #include "Chat.h"
-#include "Anticheat.h"
 #include "InstanceStatistics.h"
 #include "MovementPacketSender.h"
 
@@ -6771,13 +6770,11 @@ void Unit::CheckPendingMovementChanges()
         // Not resendable change.
         if (oldestChange.movementChangeType == KNOCK_BACK)
         {
-            pController->GetCheatData()->OnFailedToAckChange();
             PopPendingMovementChange();
             return;
         }
 
         // Enforce the change.
-        pController->GetCheatData()->OnFailedToAckChange();
         ResolvePendingMovementChange(oldestChange, true);
         PopPendingMovementChange();
     }
@@ -10004,9 +10001,6 @@ void Unit::KnockBack(float angle, float horizontalSpeed, float verticalSpeed)
         MovementPacketSender::SendKnockBackToController(this, vcos, vsin, horizontalSpeed, -verticalSpeed); // !! notice the - sign in front of speedZ !!
 
         SetJumpInitialSpeed(verticalSpeed);
-
-        if (Player* pPlayer = ToPlayer())
-            GetPlayerMovingMe()->GetCheatData()->OnKnockBack(pPlayer, horizontalSpeed, verticalSpeed, vcos, vsin);
     }
 }
 

@@ -2569,7 +2569,6 @@ class Player final: public Unit
         bool FallGround(uint8 fallMode);
 
         // Anticheat
-        MovementAnticheat* GetCheatData() const { return m_session->GetCheatData(); }
         void OnDisconnected();
         void RelocateToLastClientPosition();
         void GetSafePosition(float &x, float &y, float &z, GenericTransport const* onTransport = nullptr) const override;

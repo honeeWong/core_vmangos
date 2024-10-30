@@ -49,7 +49,6 @@
 #include "ZoneScript.h"
 #include "MoveSplineInit.h"
 #include "MoveSpline.h"
-#include "Anticheat.h"
 #include "CreatureLinkingMgr.h"
 #include "TemporarySummon.h"
 #include "GuardMgr.h"
@@ -934,7 +933,7 @@ void Creature::Update(uint32 update_diff, uint32 diff)
                                         !i_motionMaster.GetCurrent()->IsReachable() &&
                                         !HasDistanceCasterMovement() && !GetCharmerOrOwnerGuid().IsPlayer() &&
                                         (!CanReachWithMeleeAutoAttack(GetVictim()) || !IsWithinLOSInMap(GetVictim())) &&
-                                        !(GetVictim()->IsPlayer() && static_cast<Player*>(GetVictim())->GetCheatData()->IsInKnockBack());
+                                        !(GetVictim()->IsPlayer() && static_cast<Player*>(GetVictim())->HasMovementFlag(MOVEFLAG_FALLINGFAR));
                 }
             }
 

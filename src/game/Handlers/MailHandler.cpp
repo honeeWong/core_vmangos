@@ -37,7 +37,6 @@
 #include "WorldSession.h"
 #include "Opcodes.h"
 #include "Chat.h"
-#include "Anticheat.h"
 #include "AccountMgr.h"
 #include "Database/DatabaseImpl.h"
 

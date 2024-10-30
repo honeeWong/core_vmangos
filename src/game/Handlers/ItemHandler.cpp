@@ -30,7 +30,6 @@
 #include "Bag.h"
 #include "Chat.h"
 #include "Conditions.h"
-#include "Anticheat.h"
 
 void WorldSession::HandleSplitItemOpcode(WorldPacket& recv_data)
 {

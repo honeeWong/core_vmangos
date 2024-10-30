@@ -36,7 +36,6 @@
 #include "World.h"
 #include "ScriptMgr.h"
 #include "Util.h"
-#include "Anticheat.h"
 
 void WorldSession::HandleAutostoreLootItemOpcode(WorldPacket& recv_data)
 {

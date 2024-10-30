@@ -42,7 +42,6 @@
 #include "Spell.h"
 #include "ZoneScript.h"
 #include "Conditions.h"
-#include "Anticheat.h"
 #include "MasterPlayer.h"
 
 void WorldSession::HandleRepopRequestOpcode(WorldPacket& /*recv_data*/)
@@ -1307,13 +1306,5 @@ void WorldSession::HandleRequestPetInfoOpcode(WorldPacket& /*recv_data */)
 
 void WorldSession::HandleWardenDataOpcode(WorldPacket& recv_data)
 {
-    if (!m_warden)
-    {
-        sLog.Player(GetAccountId(), LOG_ANTICHEAT, LOG_LVL_MINIMAL,
-            "HandleWardenDataOpcode: warden interface not found!");
-        return;
-    }
 
-    std::lock_guard<std::mutex> lock(m_warden->m_packetQueueMutex);
-    m_warden->m_packetQueue.emplace_back(std::move(recv_data));
 }
