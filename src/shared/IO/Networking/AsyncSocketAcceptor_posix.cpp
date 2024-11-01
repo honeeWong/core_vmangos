@@ -144,6 +144,7 @@ void IO::Networking::AsyncSocketAcceptor::OnNewClientToAcceptAvailable()
     if (err)
     {
         sLog.Out(LOG_NETWORK, LOG_LVL_ERROR, "OnNewClientToAcceptAvailable -> ::IO::Utils::SetFdStatusFlag(...) Error: %s", err.ToString().c_str());
+        socketDescriptor.CloseSocket();
         return;
     }
 

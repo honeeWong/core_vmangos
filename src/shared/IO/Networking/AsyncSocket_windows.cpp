@@ -319,9 +319,9 @@ void IO::Networking::AsyncSocket::CloseSocket()
 {
     // set SHUTDOWN_PENDING flag, and check if there was already a previous one
     if (m_atomicState.fetch_or(SocketStateFlags::SHUTDOWN_PENDING) & SocketStateFlags::SHUTDOWN_PENDING)
-        return; // there was already a ::close()
+        return; // there was already a ::shutdown()
 
-    m_descriptor.CloseSocket(); // will interrupt and fail all pending IOCP events and post them to the queue
+    ::shutdown(m_descriptor.GetNativeSocket(), SD_BOTH); // will interrupt and fail all pending IOCP events and post them to the queue
 }
 
 /// The callback is invoked in the IO thread

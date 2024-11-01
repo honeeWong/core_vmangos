@@ -34,16 +34,14 @@ IO::Networking::AsyncSocket::~AsyncSocket()
         return; // Ignore destructor
 
     sLog.Out(LOG_NETWORK, LOG_LVL_DEBUG, "[%s] Destructor called ~AsyncSocket: No references left", GetRemoteIpString().c_str());
-    CloseSocket();
+    m_descriptor.CloseSocket(); // <-- This will actually close the socket and release the file descriptor to the kernel
 
-//#ifdef DEBUG
     // Logic behind these checks:
     // If the destructor is called, there should be no more std::shared_ptr<> references to this object
     // Every Read(...) or Write(...) should use `shared_from_this()` if this is not the case, one of the following checks will fail
     MANGOS_ASSERT(!(state & SocketStateFlags::CONTEXT_PRESENT));
     MANGOS_ASSERT(!(state & SocketStateFlags::WRITE_PRESENT));
     MANGOS_ASSERT(!(state & SocketStateFlags::READ_PRESENT));
-//#endif // _DEBUG
 }
 
 bool IO::Networking::AsyncSocket::IsClosing() const

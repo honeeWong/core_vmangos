@@ -251,12 +251,15 @@ void IO::Networking::AsyncSocket::Write(IO::ReadableBuffer const& source, std::f
 
 void IO::Networking::AsyncSocket::CloseSocket()
 {
+    // This function will not actually >close< the socket, since this would release the file descriptor and could cause race conditions,
+    // if the same descriptor id is reused by another socket.
+
     // set SHUTDOWN_PENDING flag, and check if there was already a previous one
     if (m_atomicState.fetch_or(SocketStateFlags::SHUTDOWN_PENDING) & SocketStateFlags::SHUTDOWN_PENDING)
-        return; // there was already a ::close()
+        return; // there was already a ::shutdown()
 
     sLog.Out(LOG_NETWORK, LOG_LVL_DEBUG, "[%s] CloseSocket(): Disconnect request", GetRemoteIpString().c_str());
-    m_descriptor.CloseSocket(); // will silently remove from this socket from the epoll/kqueue set
+    ::shutdown(m_descriptor.GetNativeSocket(), SHUT_RDWR);
 }
 
 void IO::Networking::AsyncSocket::PerformNonBlockingRead()
@@ -394,16 +397,17 @@ void IO::Networking::AsyncSocket::PerformContextSwitch()
     if (state & SocketStateFlags::CONTEXT_PENDING_LOAD)
         return; // Someone else uses it
 
-    if (state & SocketStateFlags::IGNORE_TRANSFERS)
-    {
-        m_atomicState.fetch_and(~SocketStateFlags::CONTEXT_PENDING_LOAD);
-        return; // We are not allowed to react to it
-    }
-
     MANGOS_ASSERT(state & SocketStateFlags::CONTEXT_PRESENT); // why was this function even called if we have no context?
 
     auto tmpCallback = std::move(m_contextCallback);
     m_atomicState.fetch_and(~(SocketStateFlags::CONTEXT_PENDING_LOAD | SocketStateFlags::CONTEXT_PRESENT));
+
+    if (state & SocketStateFlags::SHUTDOWN_PENDING)
+    {
+        m_atomicState.fetch_and(~SocketStateFlags::CONTEXT_PENDING_LOAD);
+        tmpCallback(IO::NetworkError(IO::NetworkError::ErrorType::SocketClosed));
+        return; // The socket was closed, no transfers are allowed
+    }
 
     MANGOS_DEBUG_ASSERT(tmpCallback);
     tmpCallback(IO::NetworkError(IO::NetworkError::ErrorType::NoError));
@@ -421,9 +425,7 @@ void IO::Networking::AsyncSocket::StopPendingTransactionsAndForceClose()
     int const pendingTransferMask = SocketStateFlags::WRITE_PENDING_SET |
                                     SocketStateFlags::WRITE_PENDING_LOAD |
                                     SocketStateFlags::READ_PENDING_SET |
-                                    SocketStateFlags::READ_PENDING_LOAD |
-                                    SocketStateFlags::CONTEXT_PENDING_SET |
-                                    SocketStateFlags::CONTEXT_PENDING_LOAD;
+                                    SocketStateFlags::READ_PENDING_LOAD;
     if (state & pendingTransferMask)
     {
         while ((state = m_atomicState.load()) & pendingTransferMask)
@@ -447,12 +449,7 @@ void IO::Networking::AsyncSocket::StopPendingTransactionsAndForceClose()
         tmpReadCallback(IO::NetworkError(IO::NetworkError::ErrorType::SocketClosed), 0);
     }
 
-    if (state & SocketStateFlags::CONTEXT_PRESENT)
-    {
-        auto tmpContextCallback = std::move(m_contextCallback);
-        m_atomicState.fetch_and(~SocketStateFlags::CONTEXT_PRESENT);
-        tmpContextCallback(IO::NetworkError(IO::NetworkError::ErrorType::SocketClosed));
-    }
+    // Note: Don't even think about clearing CONTEXT_PRESENT here, since it's stored as a raw pointer in `m_contextSwitchQueue`
 }
 
 void IO::Networking::AsyncSocket::EnterIoContext(std::function<void(IO::NetworkError)> const& callback)

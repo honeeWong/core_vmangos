@@ -15,8 +15,7 @@ IO::Networking::SocketDescriptor::~SocketDescriptor()
 
 void IO::Networking::SocketDescriptor::CloseSocket()
 {
-    if (m_isClosed)
-        return;
+    MANGOS_ASSERT(!m_isClosed);
     m_isClosed = true;
     IO::Networking::Internal::CloseSocket(m_nativeSocket);
 }
