@@ -42,6 +42,7 @@ namespace IO { namespace Networking {
 
             /// If set to true, it asks the OS to disables "Nagle's algorithm" for this socket.
             IO::NetworkError SetNativeSocketOption_NoDelay(bool doNoDelay);
+            /// Provides a hint to the OS how large the outgoing send buffer should be
             IO::NetworkError SetNativeSocketOption_SystemOutgoingSendBuffer(int bytes);
 
             /// Keep in mind to keep the source buffer in scope of the callback, otherwise random memory might get overwritten
@@ -51,14 +52,17 @@ namespace IO { namespace Networking {
             void ReadSome(char* target, size_t maxSize, std::function<void(IO::NetworkError const&, size_t)> const& callback);
             void ReadSkip(size_t skipSize, std::function<void(IO::NetworkError const&)> const& callback);
 
+            // Development decision `char*` vs `ReadableBuffer`:
             // Read() takes a `char*` while Write() uses a smart pointer to prevent accidental use-after-free.
             // It's easy to forget to keep the buffer in scope. (without this precaution, Write() could also take a `char*`)
 
             /// Warning: Using this function will NOT copy the buffer content, dont overwrite it unless callback is triggered!
+            /// You have to keep the pointer alive until the callback is called. Use [self = shared_from_this()]
             void Write(IO::ReadableBuffer const& source, std::function<void(IO::NetworkError const&)> const& callback);
 
             /// The callback is invoked in the IO thread
             /// Useful for computational expensive operations (e.g. packing and encryption), that should be avoided in the main loop
+            /// You have to keep the pointer alive until the callback is called. Use [self = shared_from_this()]
             void EnterIoContext(std::function<void(IO::NetworkError)> const& callback);
 
             void CloseSocket();
