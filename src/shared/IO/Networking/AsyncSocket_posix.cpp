@@ -573,7 +573,8 @@ void IO::Networking::AsyncSocket::OnIoEvent(uint32_t event)
 
 IO::NetworkError IO::Networking::AsyncSocket::SetNativeSocketOption_NoDelay(bool doNoDelay)
 {
-    MANGOS_ASSERT(!IsClosing());
+    if (IsClosing())
+        return IO::NetworkError(IO::NetworkError::ErrorType::SocketClosed);
 
     int optionValue = doNoDelay ? 1 : 0;
     if (::setsockopt(m_descriptor.GetNativeSocket(), IPPROTO_TCP, TCP_NODELAY, (char*) &optionValue, sizeof(optionValue)) != 0)
@@ -584,8 +585,10 @@ IO::NetworkError IO::Networking::AsyncSocket::SetNativeSocketOption_NoDelay(bool
 
 IO::NetworkError IO::Networking::AsyncSocket::SetNativeSocketOption_SystemOutgoingSendBuffer(int bytes)
 {
-    MANGOS_ASSERT(!IsClosing());
-    MANGOS_ASSERT(bytes >= 1); // although a buffer of size 1 is already pretty low...
+    MANGOS_ASSERT(bytes >= 1); // although a buffer of size 1 would already be pretty small...
+
+    if (IsClosing())
+        return IO::NetworkError(IO::NetworkError::ErrorType::SocketClosed);
 
     int optionValue = bytes;
     if (::setsockopt(m_descriptor.GetNativeSocket(), SOL_SOCKET, SO_SNDBUF, (char*) &optionValue, sizeof(optionValue)) != 0)
