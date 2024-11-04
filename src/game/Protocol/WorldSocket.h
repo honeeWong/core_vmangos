@@ -25,7 +25,6 @@
 
 #include "IO/Networking/AsyncSocket.h"
 #include "Auth/AuthCrypt.h"
-#include "Auth/BigNumber.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"
 

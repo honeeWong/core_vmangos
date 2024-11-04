@@ -8,13 +8,10 @@
 #include <unordered_map>
 #include <chrono>
 
+#include "Crypto/Hash/HMACSHA1.h"
+#include "Crypto/Hash/MD5.h"
 #include "IO/Filesystem/FileHandle.h"
 #include "Policies/Singleton.h"
-
-struct Md5HashDigest
-{
-    std::array<uint8_t, 16> digest;
-};
 
 struct PatchCacheEntry
 {
@@ -24,7 +21,7 @@ struct PatchCacheEntry
     std::chrono::system_clock::time_point lastModifyDate;
 
     // The stuff we are actually interested in
-    Md5HashDigest md5Hash;
+    Crypto::Hash::MD5::Digest md5Hash;
 };
 
 /// Caches MD5 hash of client patches present on the server
@@ -35,10 +32,10 @@ class ClientPatchCache : public MaNGOS::Singleton<ClientPatchCache, MaNGOS::Clas
 
         /// This function will detect changes in the size or modification date of the file
         /// The FileHandle will be untouched (You can use the same handle to send the data to the client)
-        Md5HashDigest GetOrCalculateHash(std::unique_ptr<IO::Filesystem::FileHandleReadonly> const& fileHandle);
+        Crypto::Hash::MD5::Digest GetOrCalculateHash(std::unique_ptr<IO::Filesystem::FileHandleReadonly> const& fileHandle);
 
         /// The FileHandle will be taken over and freed
-        Md5HashDigest CalculateAndCacheHash(std::unique_ptr<IO::Filesystem::FileHandleReadonly> fileHandle);
+        Crypto::Hash::MD5::Digest CalculateAndCacheHash(std::unique_ptr<IO::Filesystem::FileHandleReadonly> fileHandle);
 
     private:
         void LoadPatchesInfo();

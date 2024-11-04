@@ -3,10 +3,10 @@
 #include "Log.h"
 #include "Errors.h"
 #include "Config/Config.h"
+#include "Crypto/Hash/HMACSHA1.h"
+#include "Crypto/Hash/MD5.h"
 #include "IO/Filesystem/FileSystem.h"
 #include "IO/Filesystem/FileHandle.h"
-
-#include <openssl/md5.h>
 
 INSTANTIATE_SINGLETON_1(ClientPatchCache);
 
@@ -37,7 +37,7 @@ void ClientPatchCache::LoadPatchesInfo()
     }
 }
 
-Md5HashDigest ClientPatchCache::GetOrCalculateHash(std::unique_ptr<IO::Filesystem::FileHandleReadonly> const& fileHandle)
+Crypto::Hash::MD5::Digest ClientPatchCache::GetOrCalculateHash(std::unique_ptr<IO::Filesystem::FileHandleReadonly> const& fileHandle)
 {
     auto filePath = fileHandle->GetFilePath();
     auto lastModifyDate = fileHandle->GetLastModifyDate();
@@ -54,16 +54,15 @@ Md5HashDigest ClientPatchCache::GetOrCalculateHash(std::unique_ptr<IO::Filesyste
     }
     else
     { // we can use the existent entry
-        Md5HashDigest md5Hash = exisingEntry->second.md5Hash;
+        Crypto::Hash::MD5::Digest md5Hash = exisingEntry->second.md5Hash;
         m_knownPatches_mutex.unlock();
         return md5Hash;
     }
 }
 
-Md5HashDigest ClientPatchCache::CalculateAndCacheHash(std::unique_ptr<IO::Filesystem::FileHandleReadonly> fileHandle)
+Crypto::Hash::MD5::Digest ClientPatchCache::CalculateAndCacheHash(std::unique_ptr<IO::Filesystem::FileHandleReadonly> fileHandle)
 {
-    MD5_CTX ctx;
-    MD5_Init(&ctx);
+    Crypto::Hash::MD5::Generator md5;
 
     size_t constexpr CHECK_CHUNK_SIZE = 1024 * 1024; // 1 MiB Chunks
     std::vector<uint8_t> buffer(CHECK_CHUNK_SIZE);
@@ -72,7 +71,7 @@ Md5HashDigest ClientPatchCache::CalculateAndCacheHash(std::unique_ptr<IO::Filesy
 
     do { // Read the file chunk by chunk and add insert it into our MD5_Update
         uint64_t actuallyRead = fileHandle->ReadSync(buffer.data(), CHECK_CHUNK_SIZE);
-        MD5_Update(&ctx, buffer.data(), (size_t) actuallyRead);
+        md5.UpdateData(buffer.data(), (size_t) actuallyRead);
 
         totalRead += actuallyRead;
 
@@ -84,7 +83,7 @@ Md5HashDigest ClientPatchCache::CalculateAndCacheHash(std::unique_ptr<IO::Filesy
     entry.filePath = fileHandle->GetFilePath();
     entry.lastModifyDate = fileHandle->GetLastModifyDate();
     entry.fileSize = fileHandle->GetTotalFileSize();
-    MD5_Final(entry.md5Hash.digest.data(), &ctx);
+    entry.md5Hash = md5.GetDigest();
 
     MANGOS_ASSERT(totalRead == entry.fileSize);
 
