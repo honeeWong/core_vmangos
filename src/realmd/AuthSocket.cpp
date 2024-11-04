@@ -43,7 +43,7 @@
 #include "IO/Filesystem/FileSystem.h"
 #include "ProxyProtocol/ProxyV2Reader.h"
 
-#ifdef USE_SENDGRID
+#ifdef ENABLE_MAILSENDER
 #include "MailerService.h"
 #include "SendgridMail.h"
 #endif
@@ -698,7 +698,7 @@ void AuthSocket::_HandleLogonProof__PostRecv(std::shared_ptr<sAuthLogonProof_C c
                 return;
             }
 
-#ifdef USE_SENDGRID
+#ifdef ENABLE_MAILSENDER
             if (sConfig.GetBoolDefault("SendMail", false))
             {
                 auto mail = std::make_unique<SendgridMail>
