@@ -274,13 +274,13 @@ endif()
 
 if(UNIX)
   find_package(Threads)
-  target_link_libraries(shared ${CMAKE_THREAD_LIBS_INIT})
+  target_link_libraries(shared PUBLIC ${CMAKE_THREAD_LIBS_INIT})
 endif(UNIX)
 
 if(WIN32)
-  target_link_libraries(shared ws2_32 mswsock)
+  target_link_libraries(shared PUBLIC ws2_32 mswsock)
 endif()
 
-target_link_libraries(shared cpptrace::cpptrace)
+target_link_libraries(shared PRIVATE cpptrace::cpptrace)
 
-SET_TARGET_PROPERTIES (shared PROPERTIES FOLDER "Game Libs")
+SET_TARGET_PROPERTIES(shared PROPERTIES FOLDER "Game Libs")
