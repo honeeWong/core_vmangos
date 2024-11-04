@@ -23,9 +23,9 @@
 #define _AUTHSOCKET_H
 
 #include "Common.h"
-#include "Auth/BigNumber.h"
-#include "Auth/Sha1.h"
-#include "SRP6/SRP6.h"
+#include "Crypto/BigNumber.h"
+#include "Crypto/Hash/SHA1.h"
+#include "Crypto/Authentication/SRP6.h"
 #include "ByteBuffer.h"
 #include "IO/Networking/AsyncSocket.h"
 #include "IO/Timer/TimerHandle.h"
@@ -56,7 +56,7 @@ class AuthSocket : public std::enable_shared_from_this<AuthSocket>, MaNGOS::Poli
         void Start();
 
         void DoRecvIncomingData();
-        std::shared_ptr<ByteBuffer> GenerateLogonProofResponse(Sha1Hash sha);
+        std::shared_ptr<ByteBuffer> GenerateLogonProofResponse(Crypto::Hash::SHA1::Digest const& shaDigest);
         void LoadRealmlistAndWriteIntoBuffer(ByteBuffer& pkt);
         bool VerifyPinData(uint32 pin, PINData const& clientData);
         uint32 GenerateTotpPin(std::string const& secret, int interval);

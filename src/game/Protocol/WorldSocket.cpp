@@ -30,7 +30,7 @@
 #include <memory>
 #include "AddonHandler.h"
 #include "Opcodes.h"
-#include "Auth/Sha1.h"
+#include "Crypto/Hash/SHA1.h"
 #include "Database/SqlPreparedStatement.h"
 #include "Database/DatabaseEnv.h"
 #include "DBCStores.h"
@@ -222,7 +222,7 @@ static std::set<std::string> GetServerAddresses()
 
 WorldSocket::HandlerResult WorldSocket::_HandleAuthSession(WorldPacket& recvPacket)
 {
-    uint8 digest[20];
+    Crypto::Hash::SHA1::Digest digest;
     uint32 clientSeed;
     uint32 serverId;
     uint32 clientBuild;
@@ -240,7 +240,7 @@ WorldSocket::HandlerResult WorldSocket::_HandleAuthSession(WorldPacket& recvPack
     recvPacket >> account;
 
     recvPacket >> clientSeed;
-    recvPacket.read(digest, 20);
+    recvPacket.read(digest.data(), digest.size());
 
     sLog.Out(LOG_BASIC, LOG_LVL_DEBUG, "WorldSocket::HandleAuthSession: client %u, serverId %u, account %s, clientseed %u",
               clientBuild,
@@ -355,19 +355,19 @@ WorldSocket::HandlerResult WorldSocket::_HandleAuthSession(WorldPacket& recvPack
     }
 
     // Check that Key and account name are the same on client and server
-    Sha1Hash sha;
+    Crypto::Hash::SHA1::Generator sha;
 
     uint32 t = 0;
     uint32 seed = m_authSeed;
 
     sha.UpdateData(account);
-    sha.UpdateData((uint8*)&t, 4);
-    sha.UpdateData((uint8*)&clientSeed, 4);
-    sha.UpdateData((uint8*)&seed, 4);
-    sha.UpdateBigNumbers(&K, nullptr);
-    sha.Finalize();
+    sha.UpdateData((uint8 *) &t, 4);
+    sha.UpdateData((uint8 *) &clientSeed, 4);
+    sha.UpdateData((uint8 *) &seed, 4);
+    sha.UpdateData(K);
+    auto expectedDigest = sha.GetDigest();
 
-    if (memcmp(sha.GetDigest(), digest, 20) != 0)
+    if (digest != expectedDigest)
     {
         packet.Initialize(SMSG_AUTH_RESPONSE, 1);
         packet << uint8(AUTH_FAILED);

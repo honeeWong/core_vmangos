@@ -24,7 +24,7 @@
 */
 
 #include "Common.h"
-#include "Auth/Hmac.h"
+#include "Crypto/Hash/HMACSHA1.h"
 #include "Auth/base32.h"
 #include "Database/DatabaseEnv.h"
 #include "Config/Config.h"
@@ -48,7 +48,6 @@
 #include "SendgridMail.h"
 #endif
 
-#include <openssl/md5.h>
 #include <ctime>
 //#include "Util.h" -- for commented utf8ToUpperOnlyLatin
 
@@ -173,14 +172,14 @@ void AuthSocket::DoRecvIncomingData()
     });
 }
 
-std::shared_ptr<ByteBuffer> AuthSocket::GenerateLogonProofResponse(Sha1Hash sha)
+std::shared_ptr<ByteBuffer> AuthSocket::GenerateLogonProofResponse(Crypto::Hash::SHA1::Digest const& shaDigest)
 {
     std::shared_ptr<ByteBuffer> pkt(new ByteBuffer());
 
     if (m_build < 6299)  // before version 2.0.3 (exclusive)
     {
         AUTH_LOGON_PROOF_S proof{};
-        memcpy(proof.M2, sha.GetDigest(), 20);
+        memcpy(proof.M2, shaDigest.data(), 20);
         proof.cmd = CMD_AUTH_LOGON_PROOF;
         proof.error = 0;
         proof.surveyId = 0x00000000;
@@ -190,7 +189,7 @@ std::shared_ptr<ByteBuffer> AuthSocket::GenerateLogonProofResponse(Sha1Hash sha)
     else if (m_build < 8089) // before version 2.4.0 (exclusive)
     {
         AUTH_LOGON_PROOF_S_BUILD_6299 proof{};
-        memcpy(proof.M2, sha.GetDigest(), 20);
+        memcpy(proof.M2, shaDigest.data(), 20);
         proof.cmd = CMD_AUTH_LOGON_PROOF;
         proof.error = 0;
         proof.surveyId = 0x00000000;
@@ -201,7 +200,7 @@ std::shared_ptr<ByteBuffer> AuthSocket::GenerateLogonProofResponse(Sha1Hash sha)
     else
     {
         AUTH_LOGON_PROOF_S_BUILD_8089 proof{};
-        memcpy(proof.M2, sha.GetDigest(), 20);
+        memcpy(proof.M2, shaDigest.data(), 20);
         proof.cmd = CMD_AUTH_LOGON_PROOF;
         proof.error = 0;
         proof.accountFlags = ACCOUNT_FLAG_PROPASS;
@@ -563,7 +562,7 @@ void AuthSocket::_HandleLogonProof__PostRecv_HandleInvalidVersion(std::shared_pt
     }
     else
     {
-        Md5HashDigest md5Hash = sRealmdPatchCache.GetOrCalculateHash(m_pendingPatchFile);
+        Crypto::Hash::MD5::Digest md5Hash = sRealmdPatchCache.GetOrCalculateHash(m_pendingPatchFile);
         std::string wowClientPathType = "Patch"; // Must be patch "Patch"
         MANGOS_ASSERT(wowClientPathType.size() <= 255); // Filename must fit inside a byte
 
@@ -579,7 +578,7 @@ void AuthSocket::_HandleLogonProof__PostRecv_HandleInvalidVersion(std::shared_pt
         initPkt.fileTypeNameLength = wowClientPathType.size();
         memcpy(initPkt.fileTypeName, wowClientPathType.c_str(), wowClientPathType.size());
         initPkt.fileSize = m_pendingPatchFile->GetTotalFileSize();
-        memcpy(initPkt.md5, md5Hash.digest.data(), md5Hash.digest.size());
+        memcpy(initPkt.md5, md5Hash.data(), md5Hash.size());
         pkt->append(&initPkt, 1);
 
         // Set right status
@@ -737,23 +736,20 @@ void AuthSocket::_HandleLogonProof__PostRecv(std::shared_ptr<sAuthLogonProof_C c
 
         // Update the sessionkey, last_ip, last login time and reset number of failed logins in the account table for this account
         // No SQL injection (escaped username) and IP address as received by socket
-        const char* K_hex = srp.GetStrongSessionKey().AsHexStr();
+        std::string K_hex = srp.GetStrongSessionKey().AsHexStr();
         // Why it must be sync: The new network implementation is so fast that the async db cant execute the UPDATE statement before the client tries to reach mangosd
         // If it is async there would be a race condition
         bool result = LoginDatabase.PExecute(DbExecMode::MustBeSync, "UPDATE `account` SET `sessionkey` = '%s', `last_ip` = '%s', `last_login` = NOW(), `locale` = '%u', `failed_logins` = 0, `os` = '%s', `platform` = '%s' WHERE `username` = '%s'",
-                                             K_hex, GetRemoteIpString().c_str(), GetLocaleByName(m_localizationName), m_os.c_str(), m_platform.c_str(), m_safelogin.c_str() );
+                                             K_hex.c_str(), GetRemoteIpString().c_str(), GetLocaleByName(m_localizationName), m_os.c_str(), m_platform.c_str(), m_safelogin.c_str() );
         if (!result)
         {
             sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "Unable to update login stats for account '%s'", m_safelogin.c_str());
         }
 
-        OPENSSL_free((void*)K_hex);
-
         // Finish SRP6 and send the final result to the client
-        Sha1Hash sha;
-        srp.Finalize(sha);
+        Crypto::Hash::SHA1::Digest shaDigest = srp.Finalize();
 
-        std::shared_ptr<ByteBuffer> pkt = GenerateLogonProofResponse(sha);
+        std::shared_ptr<ByteBuffer> pkt = GenerateLogonProofResponse(shaDigest);
         m_status = STATUS_AUTHED;
 
         m_socket.Write(std::move(pkt), [self = shared_from_this()](IO::NetworkError const& error)
@@ -953,13 +949,13 @@ void AuthSocket::_HandleReconnectProof()
         BigNumber t1;
         t1.SetBinary(lp->R1, 16);
 
-        Sha1Hash sha;
-        sha.Initialize();
+        Crypto::Hash::SHA1::Generator sha;
         sha.UpdateData(self->m_login);
-        sha.UpdateBigNumbers(&t1, &self->m_reconnectProof, &K, nullptr);
-        sha.Finalize();
+        sha.UpdateData(self->m_reconnectProof);
+        sha.UpdateData(K);
+        Crypto::Hash::SHA1::Digest digest = sha.GetDigest();
 
-        if (!memcmp(sha.GetDigest(), lp->R2, SHA_DIGEST_LENGTH))
+        if (!memcmp(digest.data(), lp->R2, digest.size()))
         {
             if (!self->VerifyVersion(lp->R1, sizeof(lp->R1), lp->R3, true))
             {
@@ -1260,22 +1256,23 @@ bool AuthSocket::VerifyPinData(uint32 pin, PINData const& clientData)
         pinBytes[i] += 0x30;
 
     // validate the PIN, x = H(client_salt | H(server_salt | ascii(pin_bytes)))
-    Sha1Hash sha;
-    sha.UpdateData(m_serverSecuritySalt.AsByteArray());
-    sha.UpdateData(pinBytes.data(), pinBytes.size());
-    sha.Finalize();
+    Crypto::Hash::SHA1::Generator shaFirst;
+    shaFirst.UpdateData(m_serverSecuritySalt.AsByteArray());
+    shaFirst.UpdateData(pinBytes.data(), pinBytes.size());
+    auto shaFirstHash = shaFirst.GetDigest();
 
     BigNumber hash, clientHash;
-    hash.SetBinary(sha.GetDigest(), sha.GetLength());
+    hash.SetBinary(shaFirstHash.data(), shaFirstHash.size());
     clientHash.SetBinary(clientData.hash, 20);
 
-    sha.Initialize();
-    sha.UpdateData(clientData.salt, sizeof(clientData.salt));
-    sha.UpdateData(hash.AsByteArray());
-    sha.Finalize();
-    hash.SetBinary(sha.GetDigest(), sha.GetLength());
+    Crypto::Hash::SHA1::Generator shaSecond;
+    shaSecond.UpdateData(clientData.salt, sizeof(clientData.salt));
+    shaSecond.UpdateData(hash);
+    auto shaSecondHash = shaSecond.GetDigest();
 
-    return !memcmp(hash.AsDecStr(), clientHash.AsDecStr(), 20);
+    hash.SetBinary(shaSecondHash.data(), shaSecondHash.size());
+
+    return hash.AsDecStr() == clientHash.AsDecStr();
 }
 
 uint32 AuthSocket::GenerateTotpPin(std::string const& secret, int interval)
@@ -1295,9 +1292,8 @@ uint32 AuthSocket::GenerateTotpPin(std::string const& secret, int interval)
     uint64 step = static_cast<uint64>((floor(now / 30))) + interval;
     EndianConvertReverse(step);
 
-    HmacHash hmac(decoded_key.data(), key_size);
+    Crypto::Hash::HMACSHA1::Generator hmac(decoded_key.data(), key_size);
     hmac.UpdateData((uint8*)&step, sizeof(step));
-    hmac.Finalize();
 
     auto hmac_result = hmac.GetDigest();
 
@@ -1466,12 +1462,12 @@ bool AuthSocket::VerifyVersion(uint8 const* a, int32 aLength, uint8 const* versi
         else
             versionHash = &zeros;
 
-        Sha1Hash version;
+        Crypto::Hash::SHA1::Generator version;
         version.UpdateData(a, aLength);
         version.UpdateData(versionHash->data(), versionHash->size());
-        version.Finalize();
+        auto expectedHash = version.GetDigest();
 
-        if (memcmp(versionProof, version.GetDigest(), version.GetLength()) == 0)
+        if (memcmp(versionProof, expectedHash.data(), expectedHash.size()) == 0)
             return true;
     }
 

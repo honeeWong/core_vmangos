@@ -45,7 +45,7 @@
 #include "IO/Timer/AsyncSystemTimer.h"
 #include "IO/Multithreading/CreateThread.h"
 
-#ifdef USE_SENDGRID
+#ifdef ENABLE_MAILSENDER
 #include "MailerService.h"
 #include <curl/curl.h>
 #endif
@@ -148,7 +148,7 @@ extern int main(int argc, char** argv)
         sLog.Out(LOG_BASIC, LOG_LVL_DETAIL, "WARNING: Minimal required version [OpenSSL 0.9.8k]");
     }
 
-#ifdef USE_SENDGRID
+#ifdef ENABLE_MAILSENDER
     sLog.Out(LOG_BASIC, LOG_LVL_DETAIL, "Using CURL version %s", curl_version());
 
     // not checking the SendMail config option here to make sure config reloads will work (in the future?)
