@@ -19,11 +19,25 @@ README.md -> README_original.md
 ```
 
 ## Manual changes
-Changed `cmake_minimum_required` to `3.12`.
+### Changed `cmake_minimum_required` to `3.12`.
 ```diff
 --- a/dep/cpptrace/CMakeLists.txt
 +++ b/dep/cpptrace/CMakeLists.txt
 @@ -1,4 +1,4 @@
 -cmake_minimum_required(VERSION 3.14)
 +cmake_minimum_required(VERSION 3.12)
+```
+
+### Adjusted InstallRules for older cmake version
+```diff
+--- a/dep/cpptrace/cmake/InstallRules.cmake
++++ b/dep/cpptrace/cmake/InstallRules.cmake
+@@ -25,6 +25,7 @@ install(
+   COMPONENT ${package_name}-development
+   INCLUDES #
+   DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
++  ARCHIVE DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+ )
+ 
+ # create config file that points to targets file
 ```
