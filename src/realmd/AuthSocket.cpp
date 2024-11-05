@@ -711,7 +711,7 @@ void AuthSocket::_HandleLogonProof__PostRecv(std::shared_ptr<sAuthLogonProof_C c
                 mail->from(sConfig.GetStringDefault("MailFrom", ""));
                 mail->substitution("%username%", m_login);
                 mail->substitution("%unlock_pin%", std::to_string(pin));
-                mail->substitution("%originating_ip%", GetRemoteIpAddress());
+                mail->substitution("%originating_ip%", GetRemoteIpString());
 
                 MailerService::get_global_mailer()->send(std::move(mail),
                     [](SendgridMail::Result res)
