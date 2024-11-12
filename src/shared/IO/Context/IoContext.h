@@ -69,6 +69,7 @@ namespace IO
 #if defined(WIN32)
         explicit IoContext(HANDLE completionPort);
         HANDLE m_completionPort;
+        volatile uint32_t m_runningThreadsCount;
 #elif defined(__linux__)
         IO::Native::FileHandle const m_epollDescriptor;
         IO::Native::FileHandle const m_contextSwitchNotifyEventFd;

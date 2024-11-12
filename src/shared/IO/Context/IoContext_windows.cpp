@@ -15,7 +15,7 @@ std::unique_ptr<IO::IoContext> IO::IoContext::CreateIoContext()
     return std::unique_ptr<IoContext>(new IoContext(completionPort));
 }
 
-IO::IoContext::IoContext(HANDLE completionPort) : m_completionPort(completionPort), m_isRunning{true}
+IO::IoContext::IoContext(HANDLE completionPort) : m_isRunning(true), m_completionPort(completionPort), m_runningThreadsCount(0)
 {
 }
 
@@ -35,6 +35,7 @@ void IO::IoContext::RunUntilShutdown()
     DWORD bytesWritten = 0;
     DWORD constexpr maxWait = INFINITE;
 
+    m_runningThreadsCount++;
     while (m_isRunning)
     {
         bool isOkay = ::GetQueuedCompletionStatus(m_completionPort, &bytesWritten, &completionKey, reinterpret_cast<LPOVERLAPPED *>(&task), maxWait);
@@ -53,6 +54,7 @@ void IO::IoContext::RunUntilShutdown()
             std::this_thread::yield(); // wait one os tick to try again
         }
     }
+    m_runningThreadsCount--;
 }
 
 bool IO::IoContext::IsRunning() const
@@ -64,7 +66,19 @@ void IO::IoContext::Shutdown()
 {
     if (m_isRunning)
     {
+        uint32_t runningThreadsCountLocal = m_runningThreadsCount; // local count to prevent race condition after `running = false`
         m_isRunning = false;
+
+        // We need to wake up the running threads by sending a "null-completion-event" and wait until all thread stopped
+        for (uint32_t i = 0; i < runningThreadsCountLocal; i++)
+        {
+            ::PostQueuedCompletionStatus(m_completionPort, 0, 0, nullptr);
+        }
+        while (m_runningThreadsCount > 0)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        }
+
         ::CloseHandle(m_completionPort);
         m_completionPort = nullptr;
     }
