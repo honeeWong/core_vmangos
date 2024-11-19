@@ -145,3 +145,24 @@ void IO::Networking::IpAddress::UpdateCachedString()
         m_cachedToString = result.str();
     }
 }
+
+bool IO::Networking::operator==(IpAddress const& lhs, IpAddress const& rhs)
+{
+    if (lhs.GetType() != rhs.GetType())
+        return false;
+
+    switch (lhs.GetType())
+    {
+    case IpAddress::Type::IPv4:
+        return lhs.m_address.ipv4 == rhs.m_address.ipv4;
+    case IpAddress::Type::IPv6:
+        return lhs.m_address.ipv6 == rhs.m_address.ipv6;
+    }
+
+    return false;
+}
+
+bool IO::Networking::operator==(IpEndpoint const& lhs, IpEndpoint const& rhs)
+{
+    return lhs.ip == rhs.ip && lhs.port == rhs.port;
+}

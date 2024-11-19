@@ -42,6 +42,9 @@ namespace IO { namespace Networking
         // Since IPs are used in a lot of logging, we just cache the result, so it is not re-created all the time
         void UpdateCachedString();
         std::string m_cachedToString;
+
+    public:
+        friend bool operator==(IpAddress const& lhs, IpAddress const& rhs);
     };
 
     class IpEndpoint
@@ -60,6 +63,9 @@ namespace IO { namespace Networking
         {
             return ip.ToString() + ':' + std::to_string(port);
         };
+
+    public:
+        friend bool operator==(IpEndpoint const& lhs, IpEndpoint const& rhs);
     };
 }} // namespace IO::Networking
 
