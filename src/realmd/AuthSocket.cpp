@@ -1077,6 +1077,7 @@ void AuthSocket::LoadRealmlistAndWriteIntoBuffer(ByteBuffer &pkt)
                 realmflags = RealmFlags(realmflags | REALM_FLAG_OFFLINE);
 
             std::string realmIpPortStr = i->second.GetAddressForClient(m_socket.GetRemoteEndpoint().ip).toString();
+            uint8 const categoryId = GetRealmCategoryIdByBuildAndZone(m_build, RealmZone(i->second.timeZone));
 
             pkt << uint32(i->second.icon);              // realm type
             pkt << uint8(realmflags);                   // realmflags
@@ -1084,7 +1085,7 @@ void AuthSocket::LoadRealmlistAndWriteIntoBuffer(ByteBuffer &pkt)
             pkt << realmIpPortStr;                      // address
             pkt << float(i->second.populationLevel);
             pkt << uint8(AmountOfCharacters);
-            pkt << uint8(i->second.timeZone);           // realm category
+            pkt << uint8(categoryId);                   // realm category
             pkt << uint8(0x00);                         // unk, may be realm number/id?
         }
 
@@ -1127,6 +1128,7 @@ void AuthSocket::LoadRealmlistAndWriteIntoBuffer(ByteBuffer &pkt)
                 realmFlags = RealmFlags(realmFlags & ~REALM_FLAG_SPECIFYBUILD);
 
             std::string realmIpPortStr = i->second.GetAddressForClient(m_socket.GetRemoteEndpoint().ip).toString();
+            uint8 const categoryId = GetRealmCategoryIdByBuildAndZone(m_build, RealmZone(i->second.timeZone));
 
             pkt << uint8(i->second.icon);               // realm type (this is second column in Cfg_Configs.dbc)
             pkt << uint8(lock);                         // flags, if 0x01, then realm locked
@@ -1135,7 +1137,7 @@ void AuthSocket::LoadRealmlistAndWriteIntoBuffer(ByteBuffer &pkt)
             pkt << realmIpPortStr;                      // address
             pkt << float(i->second.populationLevel);
             pkt << uint8(AmountOfCharacters);
-            pkt << uint8(i->second.timeZone);           // realm category (Cfg_Categories.dbc)
+            pkt << uint8(categoryId);                   // realm category (Cfg_Categories.dbc)
             pkt << uint8(0x2C);                         // unk, may be realm number/id?
 
             if (realmFlags & REALM_FLAG_SPECIFYBUILD)

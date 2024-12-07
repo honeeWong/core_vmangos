@@ -81,6 +81,7 @@
 #include "InstanceStatistics.h"
 #include "GuardMgr.h"
 #include "TransportMgr.h"
+#include "RealmZone.h"
 #include "IO/Multithreading/CreateThread.h"
 
 #include <chrono>
@@ -322,7 +323,7 @@ void World::AddSession_(WorldSession* s)
     packet << uint8(AUTH_OK);
     packet << uint32(0);                                    // BillingTimeRemaining
                                                             // BillingPlanFlags
-    packet << uint8(s->HasTrialRestrictions() ? (BILLING_FLAG_TRIAL | BILLING_FLAG_RESTRICTED) : BILLING_FLAG_NONE); 
+    packet << uint8(s->HasTrialRestrictions() ? (BILLING_FLAG_TRIAL | BILLING_FLAG_RESTRICTED) : BILLING_FLAG_NONE);
     packet << uint32(0);                                    // BillingTimeRested
     s->SendPacket(&packet);
 
@@ -369,7 +370,7 @@ void World::AddQueuedSession(WorldSession* sess)
     packet << uint8(AUTH_WAIT_QUEUE);
     packet << uint32(0);                                    // BillingTimeRemaining
                                                             // BillingPlanFlags
-    packet << uint8(sess->HasTrialRestrictions() ? (BILLING_FLAG_TRIAL | BILLING_FLAG_RESTRICTED) : BILLING_FLAG_NONE); 
+    packet << uint8(sess->HasTrialRestrictions() ? (BILLING_FLAG_TRIAL | BILLING_FLAG_RESTRICTED) : BILLING_FLAG_NONE);
     packet << uint32(0);                                    // BillingTimeRested
     packet << uint32(GetQueuedSessionPos(sess));            // position in queue
     sess->SendPacket(&packet);
@@ -409,7 +410,7 @@ bool World::RemoveQueuedSession(WorldSession* sess)
     uint32 loggedInSessions = uint32(m_sessions.size() - m_QueuedSessions.size());
     if (loggedInSessions > getConfig(CONFIG_UINT32_PLAYER_HARD_LIMIT))
         return found;
-    
+
     // accept first in queue
     if ((!m_playerLimit || (int32)sessions <= m_playerLimit) && !m_QueuedSessions.empty())
     {
@@ -1066,7 +1067,7 @@ void World::LoadConfigSettings(bool reload)
     setConfig(CONFIG_UINT32_PACKET_BCAST_THREADS,                  "Network.PacketBroadcast.Threads", 0);
     setConfig(CONFIG_UINT32_PACKET_BCAST_FREQUENCY,                "Network.PacketBroadcast.Frequency", 50);
     setConfig(CONFIG_UINT32_PBCAST_DIFF_LOWER_VISIBILITY_DISTANCE, "Network.PacketBroadcast.ReduceVisDistance.DiffAbove", 0);
-    
+
     sLog.Out(LOG_BASIC, LOG_LVL_MINIMAL, "* Anticrash : options 0x%x rearm after %usec", getConfig(CONFIG_UINT32_ANTICRASH_OPTIONS), getConfig(CONFIG_UINT32_ANTICRASH_REARM_TIMER) / 1000);
     sLog.Out(LOG_BASIC, LOG_LVL_MINIMAL, "* Pathfinding : [%s]", getConfig(CONFIG_BOOL_MMAP_ENABLED) ? "ON" : "OFF");
 
@@ -1970,7 +1971,7 @@ void World::Update(uint32 diff)
     m_currentMSTime = WorldTimer::getMSTime();
     m_currentTime = std::chrono::time_point_cast<std::chrono::milliseconds>(Clock::now());
     m_currentDiff = diff;
-    
+
     // Update the different timers
     for (auto& timer : m_timers)
     {
@@ -2025,7 +2026,7 @@ void World::Update(uint32 diff)
 
     // Update objects (maps, transport, creatures,...)
     uint32 updateMapSystemTime = WorldTimer::getMSTime();
-    
+
     // TODO: find a better place for this
     if (!m_updateThreads)
     {
@@ -2040,7 +2041,7 @@ void World::Update(uint32 diff)
     std::future<void> job = m_updateThreads->processWorkload(_asyncTasksBusy);
     _asyncTasks.clear();
     lock.unlock();
-    
+
     sMapMgr.Update(diff);
     sBattleGroundMgr.Update(diff);
     sGuardMgr.Update(diff);
@@ -2490,7 +2491,7 @@ class BanQueryHolder : public SqlQueryHolder
 public:
     BanQueryHolder(BanMode mode, std::string banTarget, uint32 duration, std::string reason, uint32 realmId, std::string author,
         uint32 authorAccountId)
-        : m_mode(mode), m_duration(duration), m_reason(reason), m_realmId(realmId), 
+        : m_mode(mode), m_duration(duration), m_reason(reason), m_realmId(realmId),
           m_author(author), m_banTarget(banTarget), m_accountId(authorAccountId)
     {
     }
@@ -2826,7 +2827,7 @@ void World::UpdateSessions(uint32 diff)
         {
             if (pSession->PlayerLoading())
                 sLog.Out(LOG_BASIC, LOG_LVL_MINIMAL, "[CRASH] World::UpdateSession attempt to delete session %u loading a player.", pSession->GetAccountId());
-            
+
             AccountPlayHistory& history = m_accountsPlayHistory[pSession->GetAccountId()];
             if (!RemoveQueuedSession(pSession))
                 history.logoutTime = timeNow;

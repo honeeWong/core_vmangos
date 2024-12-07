@@ -27,7 +27,9 @@
 #define _REALMLIST_H
 
 #include "Common.h"
+#include "RealmZone.h"
 #include "IO/Networking/IpAddress.h"
+
 #include <array>
 
 struct RealmBuildInfo
@@ -44,7 +46,7 @@ struct RealmBuildInfo
 
 RealmBuildInfo const* FindBuildInfo(uint16 build);
 std::vector<RealmBuildInfo const*> FindBuildInfo(uint16 build, std::string const& os, std::string const& platform);
-
+uint8 GetRealmCategoryIdByBuildAndZone(uint16 build, RealmZone realmZone);
 extern std::vector<RealmBuildInfo> ExpectedRealmdClientBuilds;
 
 typedef std::set<uint32> RealmBuilds;

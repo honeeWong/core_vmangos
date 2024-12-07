@@ -924,7 +924,7 @@ void Aura::ApplyModifier(bool apply, bool Real, bool skipCheckExclusive)
     }
     m_applied = apply;
     if (aura < TOTAL_AURAS)
-        (*this.*AuraHandler [aura])(apply, Real);
+        (this->*AuraHandler [aura])(apply, Real);
 
     if (!apply && !skipCheckExclusive && IsExclusive())
         ExclusiveAuraUnapply();
@@ -1548,7 +1548,7 @@ void Aura::TriggerSpell()
             case 28084:
             {
                 // Lets only process the following when in naxx, otherwise it can become expensive as hell
-                if (triggerTarget->GetMap()->GetId() != 533)
+                if (triggerTarget->GetMap()->GetId() != MAP_NAXXRAMAS)
                     break;
                 Unit* caster = GetCaster();
 
@@ -1581,7 +1581,7 @@ void Aura::TriggerSpell()
             case 28059:
             {
                 // Lets only process the following when in naxx, otherwise it can become expensive as hell
-                if (triggerTarget->GetMap()->GetId() != 533)
+                if (triggerTarget->GetMap()->GetId() != MAP_NAXXRAMAS)
                     break;
                 Unit* caster = GetCaster();
 
@@ -7467,17 +7467,17 @@ void SpellAuraHolder::HandleCastOnAuraRemoval() const
 
     switch (GetId())
     {
-        case 26180:
+        case 26180:                              // Wyvern Sting (AQ40, Princess Huhuran)
         {
             if (mode == AURA_REMOVE_BY_DISPEL)
-                uiTriggeredSpell = 26233;        // Wyvern Sting (AQ40, Princess Huhuran)
+                uiTriggeredSpell = 26233;
             break;
         }
-        case 24002:
+        case 24002:                              // Tranquilizing Poison (ZG, Razzashi Serpent)
         case 24003:
         {
             if (mode == AURA_REMOVE_BY_EXPIRE)
-                uiTriggeredSpell = 24004;        // Tranquilizing Poison (ZG, Razzashi Serpent)
+                GetTarget()->CastSpell(GetTarget(), 24004, true);
             break;
         }
         default:
