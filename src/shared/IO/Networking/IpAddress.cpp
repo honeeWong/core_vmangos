@@ -153,10 +153,10 @@ bool IO::Networking::operator==(IpAddress const& lhs, IpAddress const& rhs)
 
     switch (lhs.GetType())
     {
-    case IpAddress::Type::IPv4:
-        return lhs.m_address.ipv4 == rhs.m_address.ipv4;
-    case IpAddress::Type::IPv6:
-        return lhs.m_address.ipv6 == rhs.m_address.ipv6;
+        case IpAddress::Type::IPv4:
+            return lhs.m_address.ipv4 == rhs.m_address.ipv4;
+        case IpAddress::Type::IPv6:
+            return lhs.m_address.ipv6 == rhs.m_address.ipv6;
     }
 
     return false;
