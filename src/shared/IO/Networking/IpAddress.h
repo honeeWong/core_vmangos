@@ -67,6 +67,10 @@ namespace IO { namespace Networking
     public:
         friend bool operator==(IpEndpoint const& lhs, IpEndpoint const& rhs);
     };
+
+    // Forward declaration for operator==
+    bool operator==(IO::Networking::IpAddress const& lhs, IO::Networking::IpAddress const& rhs);
+    bool operator==(IO::Networking::IpEndpoint const& lhs, IO::Networking::IpEndpoint const& rhs);
 }} // namespace IO::Networking
 
 
