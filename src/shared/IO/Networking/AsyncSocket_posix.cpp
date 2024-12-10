@@ -301,7 +301,8 @@ void IO::Networking::AsyncSocket::PerformNonBlockingRead()
     }
     if (newWrittenBytes < 0)
     {
-        sLog.Out(LOG_NETWORK, LOG_LVL_ERROR, "[%s] ::recv on client failed: %s", GetRemoteIpString().c_str(), SystemErrorToString(errno).c_str());
+        // If ::recv() failed because the socket is "not ready" we simply use a higher log level
+        sLog.Out(LOG_NETWORK, errno == EWOULDBLOCK ? LOG_LVL_BASIC : LOG_LVL_ERROR, "[%s] ::recv on client failed: %s", GetRemoteIpString().c_str(), SystemErrorToString(errno).c_str());
         m_atomicState.fetch_and(~SocketStateFlags::READ_PENDING_LOAD);
         return;
     }
