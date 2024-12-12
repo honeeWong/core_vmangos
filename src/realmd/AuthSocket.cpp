@@ -951,6 +951,7 @@ void AuthSocket::_HandleReconnectProof()
 
         Crypto::Hash::SHA1::Generator sha;
         sha.UpdateData(self->m_login);
+        sha.UpdateData(t1);
         sha.UpdateData(self->m_reconnectProof);
         sha.UpdateData(K);
         Crypto::Hash::SHA1::Digest digest = sha.GetDigest();
