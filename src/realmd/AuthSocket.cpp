@@ -1003,18 +1003,20 @@ void AuthSocket::_HandleRealmList()
 
         // check for too frequent requests
         auto const minDelay = sConfig.GetIntDefault("MinRealmListDelay", 1);
-        auto const now = time(nullptr);
-        auto const delay = now - self->m_lastRealmListRequest;
+        auto const now = std::chrono::steady_clock::now();
+        if (self->m_lastRealmListRequest.has_value())
+        {
+            auto const delay = std::chrono::duration_cast<std::chrono::seconds>(now - self->m_lastRealmListRequest.value()).count();
+            if (delay < minDelay)
+            {
+                sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "user %s IP %s is sending CMD_REALM_LIST too frequently. Delay = %d seconds", self->m_login.c_str(), self->GetRemoteIpString().c_str(), delay);
+
+                self->CloseSocket(); // TODO: Remove me. Closing the socket will be done implicitly if all references to this socket are deleted (when there is no IO anymore)
+                return;
+            }
+        }
 
         self->m_lastRealmListRequest = now;
-
-        if (delay < minDelay)
-        {
-            sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "user %s IP %s is sending CMD_REALM_LIST too frequently.  Delay = %d seconds", self->m_login.c_str(), self->GetRemoteIpString().c_str(), delay);
-
-            self->CloseSocket(); // TODO: Remove me. Closing the socket will be done implicitly if all references to this socket are deleted (when there is no IO anymore)
-            return;
-        }
 
         // Update realm list if need
         sRealmList.UpdateIfNeed();
